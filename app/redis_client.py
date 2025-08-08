@@ -1,4 +1,3 @@
-# infrastructure/cache/redis_client.py
 import json
 import logging
 from typing import Any, Dict, Optional, Union, List
@@ -9,34 +8,44 @@ from redis.asyncio import client
 from redis.asyncio.connection import ConnectionPool
 from redis.exceptions import ConnectionError, TimeoutError, RedisError
 
-from app.config import REDIS_PASSWORD, REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_MAX_CONNECTIONS, REDIS_SOCKET_TIMEOUT, REDIS_CONNECT_TIMEOUT, REDIS_HEALTH_CHECK_INTERVAL
+from app.config import BaseConfig, get_settings
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
+
 
 class AsyncRedisClient:
     """비동기 Redis 클라이언트 래퍼 클래스"""
     
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
         self._pool: Optional[ConnectionPool] = None
         self._client: Optional[aioredis.Redis] = None
-        self.redis_url = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
+        self.redis_url = f"redis://:{self.settings.REDIS_PASSWORD}@{self.settings.REDIS_HOST}:{self.settings.REDIS_BINDING_PORT}"
         self._pubsub_instances: Dict[str, client.PubSub] = {}
+        # logger.info(f"REDIS_HOST: {self.settings.REDIS_HOST}")
+        # logger.info(f"REDIS_BINDING_PORT: {self.settings.REDIS_BINDING_PORT}")
+        # logger.info(f"REDIS_PASSWORD: {'***' if self.settings.REDIS_PASSWORD else 'None'}")
+        # logger.info(f"REDIS_SOCKET_TIMEOUT: {self.settings.REDIS_SOCKET_TIMEOUT}")
+        # logger.info(f"REDIS_CONNECT_TIMEOUT: {self.settings.REDIS_CONNECT_TIMEOUT}")
     
     async def _initialize_client(self):
         """Redis 클라이언트 초기화"""
         try:
             # Connection Pool 생성
             self._pool = ConnectionPool(
-                host=REDIS_HOST,
-                port=REDIS_PORT,
-                password=REDIS_PASSWORD,
-                db=REDIS_DB,
+                host=self.settings.REDIS_HOST,
+                port=self.settings.REDIS_BINDING_PORT,
+                password=self.settings.REDIS_PASSWORD,
+                db=self.settings.REDIS_DB,
                 decode_responses=True,
-                max_connections=REDIS_MAX_CONNECTIONS,
+                max_connections=self.settings.REDIS_MAX_CONNECTIONS,
                 retry_on_timeout=True,
-                socket_timeout=REDIS_SOCKET_TIMEOUT,
-                socket_connect_timeout=REDIS_CONNECT_TIMEOUT,
-                health_check_interval=REDIS_HEALTH_CHECK_INTERVAL,
+                socket_timeout=self.settings.REDIS_SOCKET_TIMEOUT,
+                socket_connect_timeout=self.settings.REDIS_CONNECT_TIMEOUT,
+                health_check_interval=self.settings.REDIS_HEALTH_CHECK_INTERVAL,
+                socket_keepalive=True,
+                socket_keepalive_options={}
             )
             
             # Redis 클라이언트 생성
@@ -229,6 +238,7 @@ class AsyncRedisClient:
         """
         logger.info(f"topic being published to {topic}")
         client = await self.get_client()
+        print(topic)
         await client.publish(topic, message)
 
     async def subscribe(self, topic: str) -> client.PubSub:
@@ -277,7 +287,7 @@ async def get_async_redis_client() -> AsyncRedisClient:
     global _async_redis_client
     
     if _async_redis_client is None:
-        _async_redis_client = AsyncRedisClient()
+        _async_redis_client = AsyncRedisClient(settings)
     
     return _async_redis_client
 

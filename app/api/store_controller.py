@@ -1,6 +1,7 @@
+import re
 from fastapi import APIRouter, BackgroundTasks, Cookie, HTTPException, Query, Request
 from app.application.review_application_service import ReviewApplicationService
-from app.config import NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+from app.config import get_settings
 
 import httpx
 
@@ -8,6 +9,7 @@ from app.schemas.api_response import ApiResponse
 from app.services.jwt_token_service import JwtTokenService
 
 router = APIRouter()
+settings = get_settings()
 
 @router.get("/stores/search")
 async def get_stores(
@@ -36,8 +38,8 @@ async def get_stores(
     """
     url = "https://openapi.naver.com/v1/search/local.json"
     headers = {
-        "X-Naver-Client-Id": NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+        "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": settings.NAVER_CLIENT_SECRET,
     }
     params = {"query": keyword, "display": size, "start": page, "sort": sort}
 
@@ -49,16 +51,15 @@ async def get_stores(
     data = resp.json()
     
     stores = [
-        {"name": item["title"]}
+        {"name": re.sub(r'<[^>]+>', '', item["title"])}
         for item in data.get("items", [])
     ]
     
     return ApiResponse(data=stores)
     
-@router.get("/stores/analytics")
-async def get_store_analytics(
-    access_token: str|None = Cookie(None),
-    name: str = Query(..., description="상호명"),
+@router.post("/stores/analysis")
+async def get_store_analysis(
+    request: Request,
     background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """
@@ -73,28 +74,23 @@ async def get_store_analytics(
     return : 로직 실행 후 단순 로직 이후 응답은 웹소켓으로. 웹소켓이 존재하는 본 서버에 이벤트를 보내 응답하도록 함.
     """
     review_service = ReviewApplicationService()
-    token_service = JwtTokenService()
-    member_id = 0
-    try:
-        payload = await token_service.decode_token(access_token)
-        member_id = payload.get("member_id")
-    except:
-        pass
+
+    body = await request.json()  # JSON으로 파싱
     
-    report_id = await review_service.create_report(member_id, name)
-    
+    member_id = body.get("websocketId")
+    store_name = body.get("name")
+    print(f"member_id : {member_id} name : {store_name}")
     background_tasks.add_task(
-        review_service.execute_review,
+        review_service.get_reviews,
         member_id,
-        report_id,
-        name
+        store_name
     )
     
-    return ApiResponse(data={"reportId":report_id})
+    return ApiResponse()
 
-@router.get("reports/{report_id}")
-async def get_report(
-    report_id: int
-):
-    review_service = ReviewApplicationService()
-    return await review_service.get_report(report_id)
+# @router.get("reports/{report_id}")
+# async def get_report(
+#     report_id: int
+# ):
+#     review_service = ReviewApplicationService()
+#     return await review_service.get_report(report_id)

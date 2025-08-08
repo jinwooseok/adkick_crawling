@@ -1,11 +1,11 @@
 from typing import Union
 from fastapi import APIRouter, HTTPException, Query
 import httpx
-from app.config import NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+from app.config import get_settings
 from app.schemas.store import StoreSearchResponse, SimpleStoreResponse
 
 router = APIRouter()
-
+settings = get_settings()
 @router.get(
     "/stores",
     response_model=Union[StoreSearchResponse, SimpleStoreResponse],
@@ -24,8 +24,8 @@ async def get_stores(
 ):
     url = "https://openapi.naver.com/v1/search/local.json"
     headers = {
-        "X-Naver-Client-Id": NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+        "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": settings.NAVER_CLIENT_SECRET,
     }
     params = {"query": query, "display": display, "start": start, "sort": sort}
 

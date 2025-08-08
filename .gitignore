@@ -1,0 +1,79 @@
+# 개발 환경 데이터
+mysql/
+redis/
+storage_data/
+redis_test_data/
+storage_test_data/
+
+# 환경 설정
+.env
+.env.local
+.env.prod
+.env.test
+
+# 로그 파일
+logs/
+*.log
+review_analysis_data
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 테스트
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# 데이터베이스
+*.db
+*.sqlite
+*.sqlite3
+test.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 개발 메모
+CLAUDE.md
+notes.md
+TODO.md

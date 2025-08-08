@@ -2,15 +2,15 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 
 
-from app.config import JWT_ALGORITHM, SECRET_KEY
+from app.config import get_settings
 
-
+settings = get_settings()
 class JwtTokenService:
     """JWT를 사용한 토큰 서비스 구현체"""
     
     def __init__(self):
-        self.secret_key = SECRET_KEY
-        self.algorithm = JWT_ALGORITHM
+        self.secret_key = settings.SECRET_KEY
+        self.algorithm = settings.JWT_ALGORITHM
     
     def create_token(self, payload: dict, expires_delta: timedelta) -> str:
         expire = datetime.now(timezone.utc) + expires_delta
